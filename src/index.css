@@ -1,0 +1,18 @@
+#app {
+    border:1px solid black;
+    border-radius: 25px;
+    padding: 25px;
+    margin: 25px;
+}
+
+#app div {
+    padding: 10px 25px;
+}
+
+select {
+    width:100%;
+}
+
+span {
+    padding-left:5px
+}

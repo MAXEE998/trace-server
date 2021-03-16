@@ -1,0 +1,30 @@
+import React from 'react';
+
+export const RadioOption = (props) => {
+    const {options, selected, setSelected, title, isValid} = props;
+
+    const handleChange = (event) => {
+        setSelected(event.target.value);
+    };
+
+    return (
+        <div onChange={handleChange}>
+            <span><strong>
+                {!isValid && <a style={{color:"red"}}>* </a>}
+                {title + ": "}
+            </strong></span>
+            {Object.entries(options).map(item => {
+                    const [_, option] = item;
+                    return (
+                        <>
+                            <div>
+                                <input type="radio" value={option} name="option"/>
+                                <span>{" " + option.capitalize()}</span>
+                            </div>
+                        </>
+                    );
+                }
+            )}
+        </div>
+    );
+};
