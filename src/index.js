@@ -4,7 +4,7 @@ import {SliderBar} from './SliderBar.jsx';
 import {SelectBox} from './SelectBox.jsx';
 import {RadioOption} from "./RadioOption.jsx";
 import {checkRange} from "./validateUtils";
-import {gapiLoaded} from "./googleDriveUtils";
+import {gapiLoaded, signIn} from "./googleDriveUtils";
 import Button from 'react-bootstrap/Button';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
@@ -41,7 +41,7 @@ const Index = () => {
     const [endSeqNo, setEndSeqNo] = useState(0);
     const [minSeq, setMinSeq] = useState(0);
     const [maxSeq, setMaxSeq] = useState(100);
-    const [isLoading, setStatus] = useState(false);
+    const [isLoading, setStatus] = useState(true);
     const [validity, setValidity] = useState({
         node: true,
         type: true,
@@ -57,7 +57,7 @@ const Index = () => {
         const script = document.createElement("script");
         script.src = "https://apis.google.com/js/api.js";
         script.async = true;
-        script.onload = () => gapiLoaded(setIsAuthorized);
+        script.onload = () => gapiLoaded(setIsAuthorized, setStatus);
 
         document.body.appendChild(script);
     }, []);
@@ -155,7 +155,18 @@ EndSeqNo: ${endSeqNo}`);
 
     </>;
 
-    const googleLoginPrompt = <div><h1>Please sign in to google drive first!</h1></div>
+    const googleLoginPrompt = <>
+        <div><h1>Please sign in to google drive first!</h1></div>
+        <div>
+            <Button
+                variant={isLoading ? "secondary" : "primary"}
+                disabled={isLoading}
+                onClick={!isLoading ? signIn : null}
+            >
+                {isLoading ? 'Loading...' : 'Sign In'}
+            </Button>
+        </div>
+        </>;
 
     return (
         isAuthorized ? UI : googleLoginPrompt

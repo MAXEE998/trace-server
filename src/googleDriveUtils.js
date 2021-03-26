@@ -1,4 +1,5 @@
 import {getSendEntry, getSendLog} from './pbfUtils';
+import meta_data from './meta_data/meta_data_1000000.json'
 
 const byteSize = str => new Blob([str]).size;
 // Client ID and API key from the Developer Console
@@ -13,17 +14,18 @@ var GoogleAuth;
 var currentApiRequest = true;
 
 // TODO
-const gapiLoaded = (setIsAuthorized) => {
-    gapi.load('client:auth2', () => initClient(setIsAuthorized));
+const gapiLoaded = (setIsAuthorized, setIsLoading) => {
+    gapi.load('client:auth2', () => initClient(setIsAuthorized, setIsLoading));
 }
 
-const initClient = (setIsAuthorized) => {
+const initClient = (setIsAuthorized, setIsLoading) => {
     gapi.client.init({
         'apiKey': API_KEY,
         'clientId': CLIENT_ID,
         'scope': SCOPES,
-    }).then(function () {
+    }).then(() => {
         GoogleAuth = gapi.auth2.getAuthInstance();
+        setIsLoading(false);
         // Listen for sign-in state changes.
         GoogleAuth.isSignedIn.listen((isSignedIn) => updateSigninStatus(isSignedIn, setIsAuthorized));
         // Handle the initial sign-in state.
@@ -43,32 +45,45 @@ const signIn = () => {
  */
 async function sendAuthorizedApiRequest(requestDetails) {
     currentApiRequest = requestDetails;
+    const numberOfChunks = meta_data.sent_partitions["0"];
+    const fileIDs = meta_data.sent_id;
+    let data = [];
+    let progress = 0;
+    let time_start = Date.now();
 
-    const fileID = "1wSJOBdtplk8oW9mof78WSnyemclzUP1o";
+    console.log(`progress: ${progress}/${numberOfChunks}`);
+    for (const file in fileIDs) {
+        let chunk = await getSingleChunk(fileIDs[file]);
+        data = chunk.entries;
+        progress++;
+        console.log(`progress: ${progress}/${numberOfChunks}`);
+        outputJson({"entries": data.slice(0, 1000000)}, file);
+    }
 
-    getSingleChunk(fileID).then( (data) => {
-        outputJson(data);
-    })
-
+    console.log(`Time taken: ${Date.now() - time_start}`);
 }
 
 /***
  * Output the jsonify data
  * @param data
  */
-function outputJson (data) {
-    data = JSON.stringify(data, null, 2);
-    const filename = "output.json";
-    let element = document.createElement('a');
+function outputJson(data, filename) {
+    data = [...data.entries.map(item => Object.values(item))]
+        .map(e => e.join(","))
+        .join("\n");
+    filename = filename ? filename : "output.json";
+    const x = window.open();
+    x.blur();
+    window.focus();
+    x.document.open();
+    let element = x.document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
     element.setAttribute('download', filename);
-
     element.style.display = 'none';
     document.body.appendChild(element);
-
+    x.document.close();
     element.click();
-
-    document.body.removeChild(element);
+    x.close();
 }
 
 /***
