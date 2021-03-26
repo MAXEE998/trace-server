@@ -1,11 +1,9 @@
-import {getSendEntry} from './pbfUtils';
+import {getSendEntry, getSendLog} from './pbfUtils';
 
+const byteSize = str => new Blob([str]).size;
 // Client ID and API key from the Developer Console
 const CLIENT_ID = '43021998477-ordlnpt5ctomc0r1jsu2d5aoj417hqtn.apps.googleusercontent.com';
 const API_KEY = 'AIzaSyBEtKqPhpdn8kynyqujHRAEww6I55CrYg4';
-
-// Array of API discovery doc URLs for APIs used by the quickstart
-const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
@@ -24,17 +22,18 @@ const initClient = (setIsAuthorized) => {
         'apiKey': API_KEY,
         'clientId': CLIENT_ID,
         'scope': SCOPES,
-        'discoveryDocs': DISCOVERY_DOCS
     }).then(function () {
         GoogleAuth = gapi.auth2.getAuthInstance();
-
         // Listen for sign-in state changes.
         GoogleAuth.isSignedIn.listen((isSignedIn) => updateSigninStatus(isSignedIn, setIsAuthorized));
-        GoogleAuth.signIn();
         // Handle the initial sign-in state.
         updateSigninStatus(GoogleAuth.isSignedIn.get(), setIsAuthorized);
     })
 };
+
+const signIn = () => {
+    GoogleAuth.signIn();
+}
 
 /**
  * Store the request details. Then check to determine whether the user
@@ -42,22 +41,53 @@ const initClient = (setIsAuthorized) => {
  *   - If the user has granted access, make the API request.
  *   - If the user has not granted access, initiate the sign-in flow.
  */
-function sendAuthorizedApiRequest(requestDetails) {
+async function sendAuthorizedApiRequest(requestDetails) {
     currentApiRequest = requestDetails;
 
-    // TODO: Make API request
-    // gapi.client.request(requestDetails)
-    console.log("fire");
-    gapi.client.drive.files.get({fileId: "1YNufVrbVSOdtCebDv2KVgtuDFiVft0O9", alt: "media"}).then(
-        (response) => {
-            const data = response.body;
-            console.log(getSendEntry(data));
+    const fileID = "1wSJOBdtplk8oW9mof78WSnyemclzUP1o";
+
+    getSingleChunk(fileID).then( (data) => {
+        outputJson(data);
+    })
+
+}
+
+/***
+ * Output the jsonify data
+ * @param data
+ */
+function outputJson (data) {
+    data = JSON.stringify(data, null, 2);
+    const filename = "output.json";
+    let element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
+/***
+ * Get a chunk of data from google drive
+ * @param fileID fileId of the chunk
+ * @returns {Promise<Object>}
+ */
+async function getSingleChunk(fileID) {
+    currentApiRequest = {
+        path: `https://www.googleapis.com/drive/v3/files/${fileID}`,
+        params: {
+            alt: "media"
         }
-    )
+    }
 
-    // Reset currentApiRequest variable.
-    currentApiRequest = {};
-
+    const response = await gapi.client.request(currentApiRequest);
+    const blob = await new Blob([new Uint8Array(response.body.length).map((_, i) => response.body.charCodeAt(i))]);
+    const arraybuf = await blob.arrayBuffer();
+    return getSendLog(arraybuf);
 }
 
 /**
@@ -76,4 +106,4 @@ function updateSigninStatus(isSignedIn, setIsAuthorized) {
     }
 }
 
-export {gapiLoaded, GoogleAuth};
+export {gapiLoaded, signIn};
