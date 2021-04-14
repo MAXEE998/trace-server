@@ -15,7 +15,7 @@ export const SelectBox = (props) => {
             </strong></span>
             <div>
             <select value={selected} onChange={handleChange}>
-                {values.map(v => <option value={v}>{v}</option>)}
+                {values.map((v, id) => <option key={id} value={v}>{v}</option>)}
             </select>
             </div>
         </div>

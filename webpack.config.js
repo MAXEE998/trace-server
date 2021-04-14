@@ -6,10 +6,15 @@ const htmlPlugin = new HtmlWebpackPlugin({
 });
 
 module.exports = {
-    entry: ['@babel/polyfill','./src/index.js'],
+    mode: 'production',
+    entry: {
+        main: ['@babel/polyfill', './src/index.js'],
+        configGen: ['./src/configGenerator.js']
+    },
     output: {
         path: path.join(__dirname, 'dist'),
-        filename: 'name'.js
+        filename: '[name].bundle.js',
+        clean: true,
     },
     plugins: [htmlPlugin],
     module: {
@@ -22,6 +27,7 @@ module.exports = {
                     options: {
                         presets: [[
                             "@babel/preset-env", {
+                                "corejs": '3.0.0',
                                 "useBuiltIns": "entry"
                             }],
                             "@babel/preset-react"],
@@ -42,5 +48,17 @@ module.exports = {
                 type: 'asset/resource',
             }
         ]
-    }
+    },
+    optimization: {
+        splitChunks: {
+            chunks: "all",
+            cacheGroups: {
+                vendors: {
+                    test: /[\\/]node_modules[\\/]/,
+                    name: 'vendors',
+                    chunks: 'all',
+                },
+            },
+        },
+    },
 };

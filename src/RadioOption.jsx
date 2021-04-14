@@ -13,15 +13,13 @@ export const RadioOption = (props) => {
                 {!isValid && <a style={{color:"red"}}>* </a>}
                 {title + ": "}
             </strong></span>
-            {Object.entries(options).map(item => {
+            {Object.entries(options).map((item, id) => {
                     const [_, option] = item;
                     return (
-                        <>
-                            <div>
+                            <div key={id}>
                                 <input type="radio" value={option} name="option"/>
                                 <span>{" " + option.capitalize()}</span>
                             </div>
-                        </>
                     );
                 }
             )}

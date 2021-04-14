@@ -3,69 +3,75 @@ import ReactDOM from 'react-dom';
 import {SliderBar} from './SliderBar.jsx';
 import {SelectBox} from './SelectBox.jsx';
 import {RadioOption} from "./RadioOption.jsx";
-import {checkRange} from "./validateUtils";
-import {gapiLoaded, signIn} from "./googleDriveUtils";
+import {checkRange, checkNodes} from "./validateUtils";
+import {queryTimeInterval, produceDownloadConfig} from "./configGenerator";
+import {nodes, traceTypes} from "./constants.js"
 import Button from 'react-bootstrap/Button';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
-
 
 String.prototype.capitalize = function () {
     return this.charAt(0).toUpperCase() + this.slice(1)
 };
 
-
-const nodes = [
-    "ple4.ipv6.lip6.fr (France)",
-    "planetlab1.jhu.edu (USA, Maryland)",
-    "planetlab2.csuohio.edu (USA, Ohio)",
-    "75-130-96-12.static.oxfr.ma.charter.com (USA, Massachussets)",
-    "planetlab1.cnis.nyit.edu (USA, New York)",
-    "saturn.planetlab.carleton.ca (Canada, Ontario)",
-    "planetlab-03.cs.princeton.edu (USA, New Jersey)",
-    "prata.mimuw.edu.pl (Poland)",
-    "planetlab3.upc.es (Spain)",
-    "pl1.eng.monash.edu.au (Australia)"
-];
-
-const traceTypes = {
-    E: "emission",
-    R: "reception"
-};
-
 const Index = () => {
+
     // states for UI
-    const [selectedNode, setSelectedNode] = useState(nodes[0]);
-    const [ER, setER] = useState(null);
+    const [emissionNodeList, setEmissionNodeList] = useState([]);
+    const [receptionNodeList, setReceptionNodeList] = useState([]);
+    const [emissionNode, setEmissionNode] = useState("");
+    const [receptionNode, setReceptionNode] = useState("");
+    const [ER, setER] = useState("");
     const [startSeqNo, setStartSeqNo] = useState(0);
     const [endSeqNo, setEndSeqNo] = useState(0);
     const [minSeq, setMinSeq] = useState(0);
-    const [maxSeq, setMaxSeq] = useState(100);
-    const [isLoading, setStatus] = useState(true);
+    const [maxSeq, setMaxSeq] = useState(0);
+    const [isLoading, setStatus] = useState(false);
     const [validity, setValidity] = useState({
-        node: true,
+        enode: true,
+        rnode: true,
         type: true,
         start: true,
         end: true
     })
 
-    // states for gapi
-    const [isAuthorized, setIsAuthorized] = useState(false);
-
-    // Load the gapi.js script for Google Drive API
+    // Dynamic update of node lists
     useEffect(() => {
-        const script = document.createElement("script");
-        script.src = "https://apis.google.com/js/api.js";
-        script.async = true;
-        script.onload = () => gapiLoaded(setIsAuthorized, setStatus);
+        let elist = [];
+        let rlist = []
+        if (ER === traceTypes.E) {
+            elist = nodes.filter((_, i) => i !== 2);
+            rlist = [...nodes]
+        } else if (ER === traceTypes.R) {
+            elist = [...nodes]
+            rlist = nodes.filter((_, i) => i !== 2);
+        }
+        setEmissionNode(elist[0]);
+        setReceptionNode(rlist[0]);
+        setEmissionNodeList(elist);
+        setReceptionNodeList(rlist);
+    }, [ER]);
 
-        document.body.appendChild(script);
-    }, []);
-
+    // Dynamic update of timestamp
     useEffect(() => {
-        // TODO: update minSeq and maxSeq
+        if (checkNodes(ER, emissionNode, receptionNode)) {
+            const range = queryTimeInterval({
+                type: ER,
+                enode: emissionNode,
+                rnode: receptionNode,
+            })
+            setMaxSeq(range[1]);
+            setMinSeq(range[0]);
+            setStartSeqNo(range[0]);
+            setEndSeqNo(range[0]);
 
-    }, [selectedNode, ER]);
+        } else {
+            setMaxSeq(0);
+            setMinSeq(0);
+            setStartSeqNo(0);
+            setEndSeqNo(0);
+        }
+        }, [emissionNode, receptionNode]);
 
     // Checking input validity
     const isValid = () => {
@@ -75,6 +81,13 @@ const Index = () => {
             setValidity((prevState => ({...prevState, type: false})));
         } else {
             setValidity((prevState => ({...prevState, type: true})));
+        }
+
+        if (!checkNodes(ER, emissionNode, receptionNode)) {
+            ans = false;
+            setValidity((prevState => ({...prevState, enode: false, rnode: false})));
+        } else {
+            setValidity((prevState => ({...prevState, enode: true, rnode: true})));
         }
 
         if (!checkRange(startSeqNo, endSeqNo, maxSeq, minSeq)) {
@@ -94,28 +107,31 @@ const Index = () => {
             return;
         }
 
+        const query = {
+            "type": ER,
+            "enode": emissionNode,
+            "rnode": receptionNode,
+            "startTimestamp": startSeqNo,
+            "endTimestamp": endSeqNo
+        }
+
         console.log(`Query Info
 =========================
-Nodes: ${selectedNode}
-Type: ${ER}
-StartSeqNo: ${startSeqNo}
-EndSeqNo: ${endSeqNo}`);
+Type: ${query.type}
+Emission Node: ${query.enode}
+Reception Node: ${query.rnode} 
+Start Timestamp: ${query.startTimestamp}
+End Timestamp: ${query.endTimestamp}`);
         setStatus(true);
-        setTimeout(() => {
+        produceDownloadConfig(query, () => {
             setStatus(false);
-        }, 1000);
+        });
+
+
     }
 
     const UI = <>
         <div><h1>Welcome to Planet Lab Traces Database!</h1></div>
-
-        <SelectBox
-            selected={selectedNode}
-            setSelected={setSelectedNode}
-            values={nodes}
-            title={"Node"}
-            isValid={validity.node}
-        />
 
         <RadioOption
             options={traceTypes}
@@ -125,8 +141,24 @@ EndSeqNo: ${endSeqNo}`);
             isValid={validity.type}
         />
 
+        <SelectBox
+            selected={emissionNode}
+            setSelected={setEmissionNode}
+            values={emissionNodeList}
+            title={"Emission Node"}
+            isValid={validity.enode}
+        />
+
+        <SelectBox
+            selected={receptionNode}
+            setSelected={setReceptionNode}
+            values={receptionNodeList}
+            title={"Reception Node"}
+            isValid={validity.rnode}
+        />
+
         <SliderBar
-            title={"Starting sequence number"}
+            title={"Starting timestamp"}
             min={minSeq}
             max={maxSeq}
             value={startSeqNo}
@@ -135,7 +167,7 @@ EndSeqNo: ${endSeqNo}`);
         />
 
         <SliderBar
-            title={"Ending sequence number"}
+            title={"Ending timestamp"}
             min={minSeq}
             max={maxSeq}
             value={endSeqNo}
@@ -155,22 +187,7 @@ EndSeqNo: ${endSeqNo}`);
 
     </>;
 
-    const googleLoginPrompt = <>
-        <div><h1>Please sign in to google drive first!</h1></div>
-        <div>
-            <Button
-                variant={isLoading ? "secondary" : "primary"}
-                disabled={isLoading}
-                onClick={!isLoading ? signIn : null}
-            >
-                {isLoading ? 'Loading...' : 'Sign In'}
-            </Button>
-        </div>
-        </>;
-
-    return (
-        isAuthorized ? UI : googleLoginPrompt
-    );
+    return UI;
 };
 
 
