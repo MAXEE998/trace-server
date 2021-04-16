@@ -50,25 +50,34 @@ function queryTimeInterval(query) {
     return [log["min_timestamp"], log["max_timestamp"]]
 }
 
-function determineRange(query, files) {
-    // TODO: use binary search
-    let start = -1;
-    let end = files.length;
+function binarySearch(arr, key, target) {
+    let start = 0;
+    let end = arr.length;
+    let mid = 0;
 
-    for (let i = 0; i < files.length; i++) {
-        if (start === -1) {
-            if (i + 1 === files.length) {
-                start = i;
-            } else if (query.startTimestamp >= files[i][0] && query.startTimestamp < files[i + 1][0]) {
-                start = i;
-            }
+    while (start < end) {
+        mid =  Math.floor((start + end) / 2);
+        if (key(arr[mid]) === target) {
+            // hit
+            return mid;
+        } else if (key(arr[mid]) > target) {
+            end = mid - 1;
         } else {
-            if (query.endTimestamp < files[i][0]) {
-                end = i;
-                break;
-            }
+            start = mid + 1;
         }
     }
+
+    return mid;
+}
+
+function determineRange(query, files) {
+    // TODO: use binary search
+    let key = d => d[0];
+    let start = binarySearch(files, key, query.startTimestamp);
+    if (key(files[start]) > query.startTimestamp) start--;
+    let end = binarySearch(files, key, query.endTimestamp);
+    if (key(files[end]) <= query.endTimestamp) end++;
+    console.log([start, end])
     return [start, end];
 }
 
