@@ -50,12 +50,11 @@ function queryTimeInterval(query) {
     return [log["min_timestamp"], log["max_timestamp"]]
 }
 
-function produceDownloadConfig(query, callback) {
-    const files = processQueryType(processQueryNodes(query)).fileID
-
-    // Step 1: determine which files to include
+function determineRange(query, files) {
+    // TODO: use binary search
     let start = -1;
     let end = files.length;
+
     for (let i = 0; i < files.length; i++) {
         if (start === -1) {
             if (i + 1 === files.length) {
@@ -70,6 +69,13 @@ function produceDownloadConfig(query, callback) {
             }
         }
     }
+}
+
+function produceDownloadConfig(query, callback) {
+    const files = processQueryType(processQueryNodes(query)).fileID
+
+    // Step 1: determine which files to include
+    let start, end = determineRange(query, files)
 
     // Step 2: include fileIDs to the configuration file
     query["fileIDs"] = []
