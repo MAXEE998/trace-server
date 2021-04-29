@@ -1,8 +1,8 @@
 import {nodesMap, traceTypes} from "./constants";
-import db from "./meta_data/processed_output.json"
+import db from "./meta_data/processed_seq.json"
 
 const processQueryType = (query) => query.type === traceTypes.E ? db[traceTypes.E][query.enode][query.rnode]
-    : db[traceTypes.R][query.rnode][query.enode]
+                                                                : db[traceTypes.R][query.rnode][query.enode]
 
 const processQueryNodes = (query) => ({...query, "enode": nodesMap[query.enode], "rnode": nodesMap[query.rnode]});
 
@@ -45,9 +45,13 @@ function downloadBlob(blob, filename) {
     return a;
 }
 
-function queryTimeInterval(query) {
+function queryGlobalInterval(query) {
+   return [db["global_min_index"], db["global_max_index"]]
+}
+
+function queryInterval(query) {
     const log = processQueryType(processQueryNodes(query))
-    return [log["min_timestamp"], log["max_timestamp"]]
+    return [log["min_index"], log["max_index"]]
 }
 
 function binarySearch(arr, key, target) {
@@ -73,10 +77,10 @@ function binarySearch(arr, key, target) {
 function determineRange(query, files) {
     // TODO: use binary search
     let key = d => d[0];
-    let start = binarySearch(files, key, query.startTimestamp);
-    if (key(files[start]) > query.startTimestamp) start--;
-    let end = binarySearch(files, key, query.endTimestamp);
-    if (key(files[end]) <= query.endTimestamp) end++;
+    let start = binarySearch(files, key, query.startIndex);
+    if (key(files[start]) > query.startIndex) start--;
+    let end = binarySearch(files, key, query.endIndex);
+    if (key(files[end]) <= query.endIndex) end++;
     console.log([start, end])
     return [start, end];
 }
@@ -95,8 +99,10 @@ function produceDownloadConfig(query, callback) {
 
     // Step 3: output the file for user to download
     const blob = new Blob([ JSON.stringify(query) ], { type: 'application/json' });
-    downloadBlob(blob, `downloadConfig_${query.type}_${query.enode}_${query.rnode}_${query.startTimestamp}-${query.endTimestamp}.json`);
+    downloadBlob(blob,
+        `downloadConfig_${query.type}_${query.enode}_${query.rnode}_${query.startIndex}-${query.endIndex}.json`
+    );
     callback();
 }
 
-export {queryTimeInterval, produceDownloadConfig}
+export {queryGlobalInterval, queryInterval, produceDownloadConfig}

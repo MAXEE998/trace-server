@@ -2,6 +2,11 @@
     width: 100%; /* Width of the outside container */
 }
 
+span {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
 /* Mouse-over effects */
 .slider:hover {
     opacity: 1; /* Fully shown on mouse-over */

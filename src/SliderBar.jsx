@@ -1,9 +1,9 @@
 import React from 'react';
 import styles from './SliderBar.module.css';
+import {parseMillisecondsIntoReadableTime} from './constants';
 
 export const SliderBar = (props) => {
-    const {min, max, title, value, setValue, isValid} = props;
-
+    const {min, max, title, value, setValue, isValid, useSeq} = props;
     const handleChange = (event) => {
         setValue(parseInt(event.target.value));
     }
@@ -26,6 +26,9 @@ export const SliderBar = (props) => {
             </div>
 
             <div className={styles.valueDisplay}>
+                {useSeq&&true ? <></>
+                : <span>{`${parseMillisecondsIntoReadableTime(value*100)} since experiment starts | `}</span>
+                }
                 <input type="number"
                        value={value}
                        onChange={handleChange}
@@ -33,7 +36,7 @@ export const SliderBar = (props) => {
                        min={min}
                        max={max}
                 />
-                <span>{`(${min} - ${max})`}</span>
+                <span>{` | Range: ${min} - ${max}`}</span>
             </div>
         </div>
     );

@@ -4,8 +4,8 @@ import {SliderBar} from './SliderBar.jsx';
 import {SelectBox} from './SelectBox.jsx';
 import {RadioOption} from "./RadioOption.jsx";
 import {checkRange, checkNodes} from "./validateUtils";
-import {queryTimeInterval, produceDownloadConfig} from "./configGenerator";
-import {nodes, traceTypes} from "./constants.js"
+import {queryInterval, produceDownloadConfig} from "./configGenerator";
+import {nodes, parseMillisecondsIntoReadableTime, traceTypes} from "./constants.js"
 import Button from 'react-bootstrap/Button';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
@@ -22,10 +22,10 @@ const Index = () => {
     const [emissionNode, setEmissionNode] = useState("");
     const [receptionNode, setReceptionNode] = useState("");
     const [ER, setER] = useState("");
-    const [startSeqNo, setStartSeqNo] = useState(0);
-    const [endSeqNo, setEndSeqNo] = useState(0);
-    const [minSeq, setMinSeq] = useState(0);
-    const [maxSeq, setMaxSeq] = useState(0);
+    const [startIndexNo, setStartIndexNo] = useState(0);
+    const [endIndexNo, setEndIndexNo] = useState(0);
+    const [minIndex, setMinIndex] = useState(0);
+    const [maxIndex, setMaxIndex] = useState(0);
     const [isLoading, setStatus] = useState(false);
     const [validity, setValidity] = useState({
         enode: true,
@@ -52,24 +52,24 @@ const Index = () => {
         setReceptionNodeList(rlist);
     }, [ER]);
 
-    // Dynamic update of timestamp
+    // Dynamic update of Index
     useEffect(() => {
         if (checkNodes(ER, emissionNode, receptionNode)) {
-            const range = queryTimeInterval({
+            const range = queryInterval({
                 type: ER,
                 enode: emissionNode,
                 rnode: receptionNode,
             })
-            setMaxSeq(range[1]);
-            setMinSeq(range[0]);
-            setStartSeqNo(range[0]);
-            setEndSeqNo(range[0]);
+            setMaxIndex(range[1]);
+            setMinIndex(range[0]);
+            setStartIndexNo(range[0]);
+            setEndIndexNo(range[0]);
 
         } else {
-            setMaxSeq(0);
-            setMinSeq(0);
-            setStartSeqNo(0);
-            setEndSeqNo(0);
+            setMaxIndex(0);
+            setMinIndex(0);
+            setStartIndexNo(0);
+            setEndIndexNo(0);
         }
         }, [emissionNode, receptionNode]);
 
@@ -90,7 +90,7 @@ const Index = () => {
             setValidity((prevState => ({...prevState, enode: true, rnode: true})));
         }
 
-        if (!checkRange(startSeqNo, endSeqNo, maxSeq, minSeq)) {
+        if (!checkRange(startIndexNo, endIndexNo, maxIndex, minIndex)) {
             ans = false;
             setValidity((prevState => ({...prevState, start: false, end: false})));
         } else {
@@ -111,8 +111,8 @@ const Index = () => {
             "type": ER,
             "enode": emissionNode,
             "rnode": receptionNode,
-            "startTimestamp": startSeqNo,
-            "endTimestamp": endSeqNo
+            "startIndex": startIndexNo,
+            "endIndex": endIndexNo
         }
 
         console.log(`Query Info
@@ -120,8 +120,8 @@ const Index = () => {
 Type: ${query.type}
 Emission Node: ${query.enode}
 Reception Node: ${query.rnode} 
-Start Timestamp: ${query.startTimestamp}
-End Timestamp: ${query.endTimestamp}`);
+Start Index: ${query.startIndex}
+End Index: ${query.endIndex}`);
         setStatus(true);
         produceDownloadConfig(query, () => {
             setStatus(false);
@@ -158,22 +158,31 @@ End Timestamp: ${query.endTimestamp}`);
         />
 
         <SliderBar
-            title={"Starting timestamp"}
-            min={minSeq}
-            max={maxSeq}
-            value={startSeqNo}
-            setValue={setStartSeqNo}
+            title={"Starting Index"}
+            min={minIndex}
+            max={maxIndex}
+            value={startIndexNo}
+            setValue={setStartIndexNo}
             isValid={validity.start}
         />
 
         <SliderBar
-            title={"Ending timestamp"}
-            min={minSeq}
-            max={maxSeq}
-            value={endSeqNo}
-            setValue={setEndSeqNo}
+            title={"Ending Index"}
+            min={minIndex}
+            max={maxIndex}
+            value={endIndexNo}
+            setValue={setEndIndexNo}
             isValid={validity.end}
         />
+
+        <div>
+            <span> <strong>
+                            {"Time span selected: " + ((endIndexNo - startIndexNo) <= 0 ? "N/A" :
+                            `${parseMillisecondsIntoReadableTime((endIndexNo - startIndexNo)*100)}`)
+                            }
+            </strong> </span>
+
+        </div>
 
         <div>
             <Button
