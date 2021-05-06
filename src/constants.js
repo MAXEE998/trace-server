@@ -26,7 +26,8 @@ const nodesMap = {
 
 const traceTypes = {
     E: "emission",
-    R: "reception"
+    R: "reception",
+    B: "both",
 };
 
 function parseMillisecondsIntoReadableTime(milliseconds){

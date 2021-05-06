@@ -4,7 +4,7 @@ import {SliderBar} from './components/SliderBar.jsx';
 import {SelectBox} from './components/SelectBox.jsx';
 import {RadioOption} from "./components/RadioOption.jsx";
 import {checkRange, checkNodes} from "./validateUtils";
-import {queryInterval, produceDownloadConfig} from "./configGenerator";
+import {queryInterval, produceDownloadConfig, downloadBlob} from "./configGenerator";
 import {nodes, parseMillisecondsIntoReadableTime, traceTypes} from "./constants.js"
 import Button from 'react-bootstrap/Button';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -27,6 +27,7 @@ const Index = () => {
     const [minIndex, setMinIndex] = useState(0);
     const [maxIndex, setMaxIndex] = useState(0);
     const [isLoading, setStatus] = useState(false);
+    const [tasks, setTasks] = useState([]);
     const [validity, setValidity] = useState({
         enode: true,
         rnode: true,
@@ -44,6 +45,9 @@ const Index = () => {
             rlist = [...nodes]
         } else if (ER === traceTypes.R) {
             elist = [...nodes]
+            rlist = nodes.filter((_, i) => i !== 2);
+        } else if (ER === traceTypes.B) {
+            elist = nodes.filter((_, i) => i !== 2);
             rlist = nodes.filter((_, i) => i !== 2);
         }
         setEmissionNode(elist[0]);
@@ -71,7 +75,7 @@ const Index = () => {
             setStartIndexNo(0);
             setEndIndexNo(0);
         }
-        }, [emissionNode, receptionNode]);
+    }, [emissionNode, receptionNode]);
 
     // Checking input validity
     const isValid = () => {
@@ -115,19 +119,62 @@ const Index = () => {
             "endIndex": endIndexNo
         }
 
+        const qString = JSON.stringify(query, null, 4)
+
+        // check duplicate
+        for (const task of tasks) {
+            let temp = {
+                "type": task.type,
+                "enode": task.enode,
+                "rnode": task.rnode,
+                "startIndex": task.startIndex,
+                "endIndex": task.endIndex
+            }
+            if (JSON.stringify(temp, null, 4) === qString) {
+                alert("This task already exists!")
+                return
+            }
+        }
+
         console.log(`Query Info
 =========================
-Type: ${query.type}
-Emission Node: ${query.enode}
-Reception Node: ${query.rnode} 
-Start Index: ${query.startIndex}
-End Index: ${query.endIndex}`);
+${qString}`);
         setStatus(true);
-        produceDownloadConfig(query, () => {
+        let task = produceDownloadConfig(query, () => {
             setStatus(false);
         });
+        setTasks([...tasks, task])
+    }
 
+    const resetInterface = () => {
+        setEmissionNodeList([]);
+        setReceptionNodeList([]);
+        setEmissionNode("");
+        setReceptionNode("");
+        setER("");
+        setStartIndexNo(0);
+        setEndIndexNo(0);
+        setMinIndex(0);
+        setMaxIndex(0);
+        setValidity({
+            enode: true,
+            rnode: true,
+            type: true,
+            start: true,
+            end: true
+        })
+    }
 
+    const downloadConfig = () => {
+        setStatus(true);
+        const blob = new Blob([JSON.stringify(tasks, null, 4)],
+            {type: 'application/json'})
+        downloadBlob(blob,
+            `downloadConfig.json`
+        );
+        resetInterface();
+        setTasks([]);
+        setStatus(false);
     }
 
     const UI = <>
@@ -178,19 +225,45 @@ End Index: ${query.endIndex}`);
         <div>
             <span> <strong>
                             {"Time span selected: " + ((endIndexNo - startIndexNo) <= 0 ? "N/A" :
-                            `${parseMillisecondsIntoReadableTime((endIndexNo - startIndexNo)*100)}`)
+                                `${parseMillisecondsIntoReadableTime((endIndexNo - startIndexNo) * 100)}`)
                             }
             </strong> </span>
 
         </div>
 
         <div>
+            <span> <strong>
+                            {`Number of tasks selected: ${tasks.length}`}
+            </strong> </span>
+
+        </div>
+
+        <div>
+            <Button
+                variant={isLoading || tasks.length === 0 ? "secondary" : "primary"}
+                disabled={isLoading}
+                onClick={!isLoading && tasks.length ? downloadConfig : null}
+            >
+                {isLoading ? 'Loading...' : 'Download config'}
+            </Button>
+
             <Button
                 variant={isLoading ? "secondary" : "primary"}
                 disabled={isLoading}
                 onClick={!isLoading ? submitForm : null}
             >
-                {isLoading ? 'Loading...' : 'Query'}
+                {isLoading ? 'Loading...' : 'Add'}
+            </Button>
+
+            <Button
+                variant={isLoading ? "secondary" : "primary"}
+                disabled={isLoading}
+                onClick={!isLoading ? () => {
+                    resetInterface();
+                    setTasks([]);
+                } : null}
+            >
+                {isLoading ? 'Loading...' : 'Reset'}
             </Button>
         </div>
 

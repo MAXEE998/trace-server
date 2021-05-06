@@ -17,7 +17,7 @@ export const RadioOption = (props) => {
                     const [_, option] = item;
                     return (
                             <div key={id}>
-                                <input type="radio" value={option} name="option"/>
+                                <input type="radio" value={option} name="option" checked={option === selected}/>
                                 <span>{" " + option.capitalize()}</span>
                             </div>
                     );

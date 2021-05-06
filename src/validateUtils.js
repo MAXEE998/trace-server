@@ -9,9 +9,9 @@ const checkNodes = (type, enode, rnode) => {
         return false;
     if (enode === rnode)
         return false;
-    if (type === traceTypes.E && enode === nodes[2])
+    if ((type === traceTypes.E || type === traceTypes.B) && enode === nodes[2])
         return false;
-    if (type === traceTypes.R && rnode === nodes[2])
+    if ((type === traceTypes.R || type === traceTypes.B) && rnode === nodes[2])
         return false;
     return true
 }
