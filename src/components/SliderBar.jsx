@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './SliderBar.module.css';
-import {parseMillisecondsIntoReadableTime} from './constants';
+import {parseMillisecondsIntoReadableTime} from '../constants';
 
 export const SliderBar = (props) => {
     const {min, max, title, value, setValue, isValid, useSeq} = props;

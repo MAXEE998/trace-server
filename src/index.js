@@ -1,8 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import ReactDOM from 'react-dom';
-import {SliderBar} from './SliderBar.jsx';
-import {SelectBox} from './SelectBox.jsx';
-import {RadioOption} from "./RadioOption.jsx";
+import {SliderBar} from './components/SliderBar.jsx';
+import {SelectBox} from './components/SelectBox.jsx';
+import {RadioOption} from "./components/RadioOption.jsx";
 import {checkRange, checkNodes} from "./validateUtils";
 import {queryInterval, produceDownloadConfig} from "./configGenerator";
 import {nodes, parseMillisecondsIntoReadableTime, traceTypes} from "./constants.js"
