@@ -92,9 +92,9 @@ function produceDownloadConfig(query, callback) {
         let [start, end] = determineRange(query, files)
 
         // Step 2: include fileIDs to the configuration file
-        query["fileIDs"] = []
+        query[query.type === traceTypes.E ? "EmissionFileIDs" : "ReceptionFileIDs"] = []
         for (let i = start; i < end; i++) {
-            query["fileIDs"].push(files[i][1]);
+            query[query.type === traceTypes.E ? "EmissionFileIDs" : "ReceptionFileIDs"].push(files[i][1]);
         }
     } else {
         query.type = traceTypes.R
