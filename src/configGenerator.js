@@ -54,34 +54,28 @@ function queryInterval(query) {
     return [log["min_index"], log["max_index"]]
 }
 
-function binarySearch(arr, key, target) {
-    let start = 0;
-    let end = arr.length;
-    let mid = 0;
-
-    while (start < end) {
-        mid =  Math.floor((start + end) / 2);
-        if (key(arr[mid]) === target) {
-            // hit
-            return mid;
-        } else if (key(arr[mid]) > target) {
-            end = mid - 1;
-        } else {
-            start = mid + 1;
+function determineRange(query, files) {
+    let key = d => d[0];
+    let start = files.length - 1;
+    for (let i = 0; i < files.length - 1; i++) {
+        if (key(files[i]) <= query.startIndex && key(files[i+1]) > query.startIndex) {
+            start = i;
+            break;
         }
     }
 
-    return mid;
-}
+    let end = files.length - 1;;
+    for (let i = start; i < files.length - 1; i++) {
+        if (key(files[i]) <= query.endIndex && key(files[i+1]) > query.endIndex) {
+            end = i;
+            break;
+        }
+    }
 
-function determineRange(query, files) {
-    // TODO: use binary search
-    let key = d => d[0];
-    let start = binarySearch(files, key, query.startIndex);
-    if (key(files[start]) > query.startIndex) start--;
-    let end = binarySearch(files, key, query.endIndex);
-    if (key(files[end]) <= query.endIndex) end++;
-    return [start, end];
+
+    console.log(start, end);
+    console.log(key(files[start]), key(files[end]));
+    return [start, end+1]; // end is exclusive
 }
 
 function produceDownloadConfig(query, callback) {
